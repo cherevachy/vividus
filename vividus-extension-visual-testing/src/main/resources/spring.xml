@@ -4,9 +4,18 @@
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util https://www.springframework.org/schema/util/spring-util.xsd"
-       default-lazy-init="true" profile="web">
+       default-lazy-init="true">
 
-    <bean id="screenshotProvider" class="org.vividus.visual.screenshot.AshotScreenshotProvider">
+    <beans profile="web">
+        <bean id="adjustingCoordsProvider" class="org.vividus.visual.screenshot.AdjustingCoordsProvider" />
+    </beans>
+    
+    <beans profile="mobile_app">
+        <bean id="adjustingCoordsProvider" class="org.vividus.visual.screenshot.NoopCoordsProvider" />
+    </beans>
+
+    <beans profile="web,mobile_app">
+     <bean id="screenshotProvider" class="org.vividus.visual.screenshot.AshotScreenshotProvider">
         <property name="ignoreStrategies">
             <util:map key-type="org.vividus.visual.screenshot.IgnoreStrategy" map-class="java.util.LinkedHashMap">
                 <entry key="ELEMENT" value="${web.visual.ignored-elements}"/>
@@ -14,8 +23,6 @@
             </util:map>
         </property>
     </bean>
-
-    <bean id="adjustingCoordsProvider" class="org.vividus.visual.screenshot.AdjustingCoordsProvider" />
 
     <bean id="scenario" class="org.vividus.visual.screenshot.ScenarioBasedIndexer" />
 
@@ -26,4 +33,6 @@
     <util:list id="stepBeanNames-Visual-Hooks">
         <idref bean="scenario" />
     </util:list>
+    </beans>
+    
 </beans>

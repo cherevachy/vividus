@@ -91,6 +91,11 @@
 
     <bean class="org.vividus.ui.mobile.action.MobileAppElementActions" />
 
+    <bean id="screenshotDebugger" class="org.vividus.selenium.screenshot.FilesystemScreenshotDebugger"
+        init-method="cleanUp">
+        <property name="debugScreenshotsLocation" value="${selenium.screenshot.debug-directory}" />
+    </bean>
+
     <util:list id="stepBeanNames-MobileApp" value-type="java.lang.String">
         <idref bean="applicationSteps" />
         <idref bean="webDriverSetupSteps" />

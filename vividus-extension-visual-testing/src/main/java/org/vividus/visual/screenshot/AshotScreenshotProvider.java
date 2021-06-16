@@ -17,6 +17,8 @@
 package org.vividus.visual.screenshot;
 
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -25,7 +27,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.vividus.selenium.IWebDriverProvider;
+import org.vividus.selenium.manager.GenericWebDriverManager;
 import org.vividus.selenium.screenshot.ScreenshotDebugger;
+import org.vividus.selenium.screenshot.ScreenshotTaker;
 import org.vividus.selenium.screenshot.WebScreenshotTaker;
 import org.vividus.ui.action.ISearchActions;
 import org.vividus.ui.action.search.Locator;
@@ -37,29 +41,31 @@ import ru.yandex.qatools.ashot.coordinates.CoordsProvider;
 
 public class AshotScreenshotProvider implements ScreenshotProvider
 {
-    private final WebScreenshotTaker screenshotTaker;
+    private final ScreenshotTaker screenshotTaker;
     private final ISearchActions searchActions;
     private final ScreenshotDebugger screenshotDebugger;
     private final CoordsProvider coordsProvider;
     private final IWebDriverProvider webDriverProvider;
+    private final GenericWebDriverManager webDriverManager;
 
     private Map<IgnoreStrategy, Set<Locator>> ignoreStrategies;
 
-    public AshotScreenshotProvider(WebScreenshotTaker screenshotTaker, ISearchActions searchActions,
-            ScreenshotDebugger screenshotDebugger, CoordsProvider coordsProvider, IWebDriverProvider webDrvierProvider)
+    public AshotScreenshotProvider(ScreenshotTaker screenshotTaker, ISearchActions searchActions,
+            ScreenshotDebugger screenshotDebugger, CoordsProvider coordsProvider, IWebDriverProvider webDrvierProvider,
+            GenericWebDriverManager webDriverManager)
     {
         this.screenshotTaker = screenshotTaker;
         this.searchActions = searchActions;
         this.screenshotDebugger = screenshotDebugger;
         this.coordsProvider = coordsProvider;
         this.webDriverProvider = webDrvierProvider;
+        this.webDriverManager = webDriverManager;
     }
 
     @Override
     public Screenshot take(VisualCheck visualCheck)
     {
-        Screenshot screenshot = screenshotTaker.takeAshotScreenshot(
-                visualCheck.getSearchContext(), visualCheck.getScreenshotConfiguration());
+        Screenshot screenshot = takeAScreenshot(visualCheck);
         BufferedImage original = screenshot.getImage();
         Map<IgnoreStrategy, Set<Locator>> stepLevelElementsToIgnore = visualCheck.getElementsToIgnore();
         for (Map.Entry<IgnoreStrategy, Set<Locator>> strategy : ignoreStrategies.entrySet())
@@ -81,6 +87,24 @@ public class AshotScreenshotProvider implements ScreenshotProvider
             screenshotDebugger.debug(this.getClass(), "cropped_by_" + cropStrategy, original);
         }
         screenshot.setImage(original);
+        return screenshot;
+    }
+
+    private Screenshot takeAScreenshot(VisualCheck visualCheck)
+    {
+        if (webDriverManager.isMobile())
+        {
+            try
+            {
+                return new Screenshot(screenshotTaker.takeViewportScreenshot());
+            }
+            catch (IOException e)
+            {
+                throw new UncheckedIOException(e);
+            }
+        }
+        Screenshot screenshot = ((WebScreenshotTaker) screenshotTaker).takeAshotScreenshot(
+            visualCheck.getSearchContext(), visualCheck.getScreenshotConfiguration());
         return screenshot;
     }
 
